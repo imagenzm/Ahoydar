@@ -1,7 +1,7 @@
 -- AutoImport.lua
 if not Ahoydar then Ahoydar = {} end
 
--- Функция автоматического импорта событий текущего месяца с фильтрацией игнорируемых событий
+-- Функция автоматического импорта событий текущего месяца с фильтрацией
 function Ahoydar:AutoImportCalendarEvents()
     if not C_Calendar then
         print("API календаря недоступно!")
@@ -21,8 +21,8 @@ function Ahoydar:AutoImportCalendarEvents()
     local month = monthInfo.month
     local numDays = monthInfo.numDays
 
-    -- Список ключевых слов для игнорирования событий (можно обновлять)
-    local ignoreKeywords = {"pvp", "арен", "полях боя", "наденьте"}
+    -- Список ключевых слов для игнорирования событий
+    local ignoreKeywords = {"pvp", "арен", "полях боя", "наденьте", "кубок", "питомцев"}
 
     for day = 1, numDays do
         local numEvents = C_Calendar.GetNumDayEvents(0, day)
@@ -34,7 +34,6 @@ function Ahoydar:AutoImportCalendarEvents()
             for i = 1, numEvents do
                 local event = C_Calendar.GetDayEvent(0, day, i)
                 if event then
-                    -- Фильтрация: если название события содержит один из ключевых слов, пропускаем его
                     local lowerTitle = string.lower(event.title or "")
                     local ignore = false
                     for _, keyword in ipairs(ignoreKeywords) do
@@ -43,9 +42,7 @@ function Ahoydar:AutoImportCalendarEvents()
                             break
                         end
                     end
-                    if ignore then
-                        print("Игнорируется событие: " .. (event.title or "Без названия"))
-                    else
+                    if not ignore then
                         local exists = false
                         for _, ev in ipairs(AhoydarDB.events[key]) do
                             if ev.title == event.title then
