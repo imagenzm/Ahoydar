@@ -91,7 +91,7 @@ if not Ahoydar.uiFrame then
     -- Кнопки переключения месяца – позиционируются относительно надписи месяца, ближе к центру
     local prevButton = CreateFrame("Button", nil, Ahoydar.uiFrame, "UIPanelButtonTemplate")
     prevButton:SetSize(30, 22)
-    prevButton:SetPoint("RIGHT", Ahoydar.monthLabel, "LEFT", -10, 0)
+    prevButton:SetPoint("TOPLEFT", Ahoydar.uiFrame, "TOPLEFT", 350, -40)
     prevButton:SetText("<")
     prevButton:SetScript("OnClick", function()
         Ahoydar:ChangeMonth(-1)
@@ -99,7 +99,7 @@ if not Ahoydar.uiFrame then
 
     local nextButton = CreateFrame("Button", nil, Ahoydar.uiFrame, "UIPanelButtonTemplate")
     nextButton:SetSize(30, 22)
-    nextButton:SetPoint("LEFT", Ahoydar.monthLabel, "RIGHT", 10, 0)
+    nextButton:SetPoint("TOPRIGHT", Ahoydar.uiFrame, "TOPRIGHT", -350, -40)
     nextButton:SetText(">")
     nextButton:SetScript("OnClick", function()
         Ahoydar:ChangeMonth(1)
@@ -858,30 +858,40 @@ function Ahoydar:OpenPreImportWindow(filterType)
     
     -- Выпадающий список для выбора типа событий:
     local eventTypes = {"Все типы", "PvP", "PvE", "Праздники", "Прочее"}
-    local eventTypeDropdown = CreateFrame("Frame", "AhoydarEventTypeDropdown", self.preImportFrame, "UIDropDownMenuTemplate")
-    eventTypeDropdown:SetPoint("TOPLEFT", self.preImportFrame, "TOPLEFT", 10, -40)
-    UIDropDownMenu_SetWidth(eventTypeDropdown, 150)
-    UIDropDownMenu_SetText(eventTypeDropdown, "Все типы")
-    local dropdown = eventTypeDropdown
-    UIDropDownMenu_Initialize(dropdown, function(self, level, menuList)
-        local info = UIDropDownMenu_CreateInfo()
-        for i, eventType in ipairs(eventTypes) do
-            info.text = eventType
-            info.value = eventType
-            info.func = function(button)
-                UIDropDownMenu_SetSelectedValue(dropdown, button.value)
-                UIDropDownMenu_SetText(dropdown, button.value)
-                local selectedType = button.value
-                if selectedType == "Все типы" then
-                    selectedType = nil
-                end
-                print("Выбран тип события:", button.value)
-                Ahoydar:LoadPreImportEvents(selectedType)
+local eventTypeDropdown = CreateFrame("Frame", "AhoydarEventTypeDropdown", self.preImportFrame, "UIDropDownMenuTemplate")
+eventTypeDropdown:SetPoint("TOPLEFT", self.preImportFrame, "TOPLEFT", 10, -40)
+UIDropDownMenu_SetWidth(eventTypeDropdown, 150)
+UIDropDownMenu_SetText(eventTypeDropdown, "Все типы")
+local dropdown = eventTypeDropdown
+UIDropDownMenu_Initialize(dropdown, function(self, level, menuList)
+    local info = UIDropDownMenu_CreateInfo()
+    for i, eventType in ipairs(eventTypes) do
+        info.text = eventType
+        info.value = eventType
+        info.func = function(button)
+            UIDropDownMenu_SetSelectedValue(dropdown, button.value)
+            UIDropDownMenu_SetText(dropdown, button.value)
+            local selectedType = button.value
+            if selectedType == "Все типы" then
+                selectedType = nil
             end
-            UIDropDownMenu_AddButton(info)
+            print("Выбран тип события:", button.value)
+            Ahoydar:LoadPreImportEvents(selectedType)
         end
-    end)
-    self.preImportFrame.eventTypeDropdown = dropdown
+        UIDropDownMenu_AddButton(info)
+    end
+end)
+self.preImportFrame.eventTypeDropdown = dropdown
+
+-- Добавляем кнопку "Сканировать" рядом с выпадающим меню
+local scanButton = CreateFrame("Button", nil, self.preImportFrame, "UIPanelButtonTemplate")
+scanButton:SetSize(120, 25)
+scanButton:SetPoint("TOPLEFT", eventTypeDropdown, "TOPRIGHT", 10, 0)
+scanButton:SetText("Сканировать")
+scanButton:SetScript("OnClick", function()
+    Ahoydar:AutoImportCalendarEvents()
+end)
+self.preImportFrame.scanButton = scanButton
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, self.preImportFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetSize(460, 450)

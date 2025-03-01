@@ -15,3 +15,4 @@ GUI.lua
 Events.lua
 Minimap.lua
 DefaultEvents.lua
+AutoImport.lua

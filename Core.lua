@@ -72,9 +72,14 @@ end
 ---------------------------------------------------
 function Ahoydar:DeleteEvent(day, index)
     local key = string.format("%04d-%02d-%02d", self.currentYear, self.currentMonth, day)
-    if AhoydarDB.events[key] then
+    if AhoydarDB.events[key] and AhoydarDB.events[key][index] then
+        local title = AhoydarDB.events[key][index].title
+        if title == "День Ахоева рождения!" then
+            print("Нельзя удалить событие 'День Ахоева рождения!'")
+            return
+        end
         table.remove(AhoydarDB.events[key], index)
-        print("Событие удалено из " .. key)
+        print("Ahoydar: Событие '" .. title .. "' удалено!")
     end
 end
 
