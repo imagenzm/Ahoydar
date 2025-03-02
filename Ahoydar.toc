@@ -16,3 +16,5 @@ Events.lua
 Minimap.lua
 DefaultEvents.lua
 AutoImport.lua
+WhitelistEvents.lua
+TodayPopup.lua

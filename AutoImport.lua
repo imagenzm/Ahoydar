@@ -70,12 +70,12 @@ function Ahoydar:AutoImportCalendarEvents()
     Ahoydar:UpdateCalendar()
 end
 
--- Фрейм для автоматического запуска импорта через 20 секунд после входа в игру
+-- Фрейм для автоматического запуска импорта через 10 секунд после входа в игру
 local autoImportFrame = CreateFrame("Frame")
 autoImportFrame:RegisterEvent("PLAYER_LOGIN")
 autoImportFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
-        C_Timer.After(20, function()
+        C_Timer.After(10, function()
             Ahoydar:AutoImportCalendarEvents()
         end)
         self:UnregisterEvent("PLAYER_LOGIN")

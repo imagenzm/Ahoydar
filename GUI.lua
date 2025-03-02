@@ -298,10 +298,8 @@ function Ahoydar:FillDayCellWithEvents(cell, eventsForDay)
         iconFrame:SetBackdropBorderColor(0, 0, 0)
         
         local text = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        -- Сдвиг текста вправо на 2 пикселя и привязка к левому краю
         text:SetPoint("LEFT", iconFrame, "LEFT", 3, 0)
         text:SetJustifyH("LEFT")
-        --text:SetWidth(DAY_CELL_WIDTH)
         text:SetWordWrap(false)
         
         local originalTitle = eventData.title or "Событие"
@@ -629,7 +627,13 @@ function Ahoydar:OpenEditEventWindow(day, index)
     self.editFrame.startDateBox:SetText(defaultDate)
     self.editFrame.endDateBox:SetText(defaultDate)
     self.editFrame.titleBox:SetText("")
-    self.editFrame.descEditBox:SetText("")
+    -- Если создается новое событие (index не указан), пытаемся взять полное описание из белого списка
+    local whitelistEvent = Ahoydar:GetTodayWhitelistEvent()
+    if not index and whitelistEvent then
+        self.editFrame.descEditBox:SetText(whitelistEvent.description or "")
+    else
+        self.editFrame.descEditBox:SetText("")
+    end
     self.editFrame.selectedIcon = "Interface\\ICONS\\INV_Misc_QuestionMark"
     self.editFrame.deleteButton:Hide()
     
@@ -771,7 +775,6 @@ function Ahoydar:LoadPreImportEvents(filterType)
     local currentYear = date("*t").year
     local eventsToImport = {}
 
-    -- Определяем список категорий
     local eventTypes = {"PvP", "PvE", "Праздники", "Прочее"}
 
     for month = 1, 12 do
@@ -784,7 +787,7 @@ function Ahoydar:LoadPreImportEvents(filterType)
                 if event then
                     local title = event.title or "Без названия"
                     local lowerTitle = string.lower(title)
-                    local category = "Прочее"  -- значение по умолчанию
+                    local category = "Прочее"
 
                     if lowerTitle:find("pvp") or lowerTitle:find("полях боя") or lowerTitle:find("арене") then
                         category = "PvP"
@@ -807,7 +810,6 @@ function Ahoydar:LoadPreImportEvents(filterType)
                         category = "Праздники"
                     end
 
-                    -- Фильтруем: если filterType не задан или совпадает с вычисленной категорией
                     if not filterType or filterType == category then
                         table.insert(eventsToImport, {
                             title = title,
@@ -849,49 +851,46 @@ function Ahoydar:OpenPreImportWindow(filterType)
         tile = true, tileSize = 32, edgeSize = 32,
         insets = { left = 8, right = 8, top = 8, bottom = 8 },
     })
-    -- Устанавливаем слой выше основного окна:
     self.preImportFrame:SetFrameStrata("DIALOG")
     
     local title = self.preImportFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     title:SetPoint("TOP", self.preImportFrame, "TOP", 0, -10)
     title:SetText("Предимпорт событий")
     
-    -- Выпадающий список для выбора типа событий:
     local eventTypes = {"Все типы", "PvP", "PvE", "Праздники", "Прочее"}
-local eventTypeDropdown = CreateFrame("Frame", "AhoydarEventTypeDropdown", self.preImportFrame, "UIDropDownMenuTemplate")
-eventTypeDropdown:SetPoint("TOPLEFT", self.preImportFrame, "TOPLEFT", 10, -40)
-UIDropDownMenu_SetWidth(eventTypeDropdown, 150)
-UIDropDownMenu_SetText(eventTypeDropdown, "Все типы")
-local dropdown = eventTypeDropdown
-UIDropDownMenu_Initialize(dropdown, function(self, level, menuList)
-    local info = UIDropDownMenu_CreateInfo()
-    for i, eventType in ipairs(eventTypes) do
-        info.text = eventType
-        info.value = eventType
-        info.func = function(button)
-            UIDropDownMenu_SetSelectedValue(dropdown, button.value)
-            UIDropDownMenu_SetText(dropdown, button.value)
-            local selectedType = button.value
-            if selectedType == "Все типы" then
-                selectedType = nil
+    local eventTypeDropdown = CreateFrame("Frame", "AhoydarEventTypeDropdown", self.preImportFrame, "UIDropDownMenuTemplate")
+    eventTypeDropdown:SetPoint("TOPLEFT", self.preImportFrame, "TOPLEFT", 10, -40)
+    UIDropDownMenu_SetWidth(eventTypeDropdown, 150)
+    UIDropDownMenu_SetText(eventTypeDropdown, "Все типы")
+    local dropdown = eventTypeDropdown
+    UIDropDownMenu_Initialize(dropdown, function(self, level, menuList)
+        local info = UIDropDownMenu_CreateInfo()
+        for i, eventType in ipairs(eventTypes) do
+            info.text = eventType
+            info.value = eventType
+            info.func = function(button)
+                UIDropDownMenu_SetSelectedValue(dropdown, button.value)
+                UIDropDownMenu_SetText(dropdown, button.value)
+                local selectedType = button.value
+                if selectedType == "Все типы" then
+                    selectedType = nil
+                end
+                print("Выбран тип события:", button.value)
+                Ahoydar:LoadPreImportEvents(selectedType)
             end
-            print("Выбран тип события:", button.value)
-            Ahoydar:LoadPreImportEvents(selectedType)
+            UIDropDownMenu_AddButton(info)
         end
-        UIDropDownMenu_AddButton(info)
-    end
-end)
-self.preImportFrame.eventTypeDropdown = dropdown
+    end)
+    self.preImportFrame.eventTypeDropdown = dropdown
 
--- Добавляем кнопку "Сканировать" рядом с выпадающим меню
-local scanButton = CreateFrame("Button", nil, self.preImportFrame, "UIPanelButtonTemplate")
-scanButton:SetSize(120, 25)
-scanButton:SetPoint("TOPLEFT", eventTypeDropdown, "TOPRIGHT", 10, 0)
-scanButton:SetText("Сканировать")
-scanButton:SetScript("OnClick", function()
-    Ahoydar:AutoImportCalendarEvents()
-end)
-self.preImportFrame.scanButton = scanButton
+    local scanButton = CreateFrame("Button", nil, self.preImportFrame, "UIPanelButtonTemplate")
+    scanButton:SetSize(120, 25)
+    scanButton:SetPoint("TOPLEFT", eventTypeDropdown, "TOPRIGHT", 10, 0)
+    scanButton:SetText("Сканировать")
+    scanButton:SetScript("OnClick", function()
+        Ahoydar:AutoImportCalendarEvents()
+    end)
+    self.preImportFrame.scanButton = scanButton
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, self.preImportFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetSize(460, 450)
@@ -931,25 +930,17 @@ end
 
 function Ahoydar:UpdatePreImportUI()
     local contentFrame = self.preImportFrame.contentFrame
-    
-    -- 1. Удаляем старые элементы (отвязываем от родителя и прячем).
     local oldChildren = { contentFrame:GetChildren() }
     for _, child in ipairs(oldChildren) do
         child:Hide()
-        child:SetParent(nil)  -- чтобы они не оставались в списке детей contentFrame
+        child:SetParent(nil)
     end
-    
-    -- 2. Задаём начальный отступ (yOffset) сверху
     local yOffset = -10
-    
-    -- 3. Для каждого события создаём отдельный "ряд" (Frame), в который кладём чекбокс и текст.
     for index, event in ipairs(self.preImportFrame.eventList) do
-        -- Создаём фрейм-строку
         local rowFrame = CreateFrame("Frame", nil, contentFrame, "BackdropTemplate")
         rowFrame:SetSize(460, 20)
         rowFrame:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, yOffset)
         
-        -- Чекбокс
         local checkBox = CreateFrame("CheckButton", nil, rowFrame, "UICheckButtonTemplate")
         checkBox:SetSize(20, 20)
         checkBox:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
@@ -958,27 +949,19 @@ function Ahoydar:UpdatePreImportUI()
             event.selected = self:GetChecked()
         end)
         
-        -- Текст
         local text = rowFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         text:SetPoint("LEFT", checkBox, "RIGHT", 5, 0)
         text:SetText(event.title .. " (" .. event.startDate .. ")")
         
-        -- Сдвигаем yOffset на следующую строку
         yOffset = yOffset - 25
     end
-    
-    -- 4. Устанавливаем реальную высоту contentFrame, чтобы скролл работал корректно
     local totalHeight = math.abs(yOffset)
     if totalHeight < 450 then
         totalHeight = 450
     end
     contentFrame:SetSize(460, totalHeight)
-    
-    -- Если вы используете прокрутку, нужно обновить размеры:
     self.preImportFrame.scrollFrame:UpdateScrollChildRect()
 end
-
-
 
 ----------------------------------------------------------------
 -- СЛЕШ-КОМАНДА ДЛЯ ПРЕДИМПОРТА
