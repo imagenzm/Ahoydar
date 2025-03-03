@@ -6,7 +6,7 @@ WhitelistEvents = {
         cellBackground = "Interface\\AddOns\\Ahoydar\\Textures\\inv_misc_celebrationcake_01.jpg",
         description = "День рождения основателя голдфармерского движения \"Жетон каждому малютке\"",
         links = {
-            "https://example.com/birthday_video"
+            { name = "", url = "https://example.com/birthday_video" },
         },
     },
     {
@@ -30,9 +30,9 @@ WhitelistEvents = {
 Кулинария: "Лягушки с хрустящей корочкой" (требуется: 5 Простая мука)
 Рыбная ловля: "Морской хот-дог"
         ]],
-        links = {
-            "https://youtu.be/G65TPAPlta8",
-            "https://youtu.be/e_K4Sek2_pM",
-        },
+links = {
+    { name = "Передача валюты и сокровища", url = "https://youtu.be/G65TPAPlta8" },
+    { name = "Зелья новолуния", url = "https://youtu.be/e_K4Sek2_pM" },
+}
     },
 }

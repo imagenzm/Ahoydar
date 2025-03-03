@@ -1,23 +1,6 @@
 -- TodayPopup.lua
 if not Ahoydar then Ahoydar = {} end
 
--- Вспомогательная функция для обрезания пробелов по краям строки
-local function strtrim(s)
-    return s:match("^%s*(.-)%s*$")
-end
-
--- Функция для разбиения строки на подстроки по символам перевода строки
-local function SplitLines(str)
-    local t = {}
-    for line in string.gmatch(str, "([^\r\n]+)") do
-        local trimmed = strtrim(line)
-        if trimmed ~= "" then
-            table.insert(t, trimmed)
-        end
-    end
-    return t
-end
-
 -- Функция для поиска события из белого списка в AhoydarDB для сегодняшней даты
 function Ahoydar:GetTodayWhitelistEvent()
     local today = date("*t")
@@ -48,27 +31,30 @@ function Ahoydar:ShowTodayWhitelistPopup()
 
     if not Ahoydar.todayPopup then
         local frame = CreateFrame("Frame", "AhoydarTodayPopup", UIParent, "BackdropTemplate")
-        frame:SetSize(400, 250)
+        frame:SetSize(400, 300)
         frame:SetPoint("CENTER")
-        frame:SetBackdrop({
-            bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile     = true, tileSize = 32, edgeSize = 16,
-            insets   = { left = 8, right = 8, top = 8, bottom = 8 },
-        })
-        frame:SetBackdropColor(0, 0, 0, 1)
+frame:SetBackdrop({
+  bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  tile     = true, tileSize = 32, edgeSize = 32,
+  insets   = { left = 8, right = 8, top = 8, bottom = 8 },
+})
+frame:SetBackdropColor(0, 0, 0, 1)
         frame:EnableMouse(true)
         frame:SetMovable(true)
         frame:RegisterForDrag("LeftButton")
         frame:SetScript("OnDragStart", frame.StartMoving)
         frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-        -- При закрытии основного окна закрываем и окно подтверждения, если оно открыто
-        frame:SetScript("OnHide", function(self)
-            if Ahoydar.linkConfirmPopup and Ahoydar.linkConfirmPopup:IsShown() then
-                Ahoydar.linkConfirmPopup:Hide()
+        
+        -- Позволяем закрытие окна по ESC
+        frame:EnableKeyboard(true)
+        frame:SetPropagateKeyboardInput(true)
+        frame:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                self:Hide()
             end
         end)
-        
+
         local line1 = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         line1:SetPoint("TOP", frame, "TOP", 0, -20)
         line1:SetText("Amoraloff спешит на помощь!")
@@ -83,15 +69,11 @@ function Ahoydar:ShowTodayWhitelistPopup()
         descText:SetJustifyH("CENTER")
         frame.descText = descText
 
-        local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-        scrollFrame:SetSize(360, 60)
-        scrollFrame:SetPoint("TOP", descText, "BOTTOM", 0, -10)
-        frame.scrollFrame = scrollFrame
-
-        local container = CreateFrame("Frame", nil, scrollFrame)
-        container:SetSize(360, 60)
-        scrollFrame:SetScrollChild(container)
-        frame.linkContainer = container
+        -- Контейнер для полей ввода ссылок
+        local linksContainer = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+        linksContainer:SetSize(360, 100)
+        linksContainer:SetPoint("TOP", descText, "BOTTOM", 0, -10)
+        frame.linksContainer = linksContainer
 
         local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         closeButton:SetSize(80, 25)
@@ -100,95 +82,68 @@ function Ahoydar:ShowTodayWhitelistPopup()
         closeButton:SetScript("OnClick", function() frame:Hide() end)
         frame.closeButton = closeButton
 
+        -- Надпись-подсказка под ссылками
+        local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        hint:SetPoint("TOP", linksContainer, "BOTTOM", 0, 10)
+        hint:SetText("скопируй ссылку в бразуер")
+        hint:SetJustifyH("CENTER")
+        frame.hint = hint
+		
         Ahoydar.todayPopup = frame
     end
 
     local popup = Ahoydar.todayPopup
+    popup:Show()
     popup.line2:SetText('Не пропусти "' .. whitelistEvent.title .. '".')
+
+    -- Берём только первую строку из описания
     local fullDesc = whitelistEvent.description or ""
-    local firstLine = fullDesc:match("^(.-)\n") or fullDesc
+    local firstLine = fullDesc:match("^[^\r\n]+") or ""
     popup.descText:SetText(firstLine)
 
-    for _, child in ipairs({ popup.linkContainer:GetChildren() }) do
+    -- Заполняем ссылки
+    local container = popup.linksContainer
+    for _, child in ipairs({ container:GetChildren() }) do
         child:Hide()
         child:SetParent(nil)
     end
-    popup.linkList = {}
 
-    local yOffset = -5
-    for i, link in ipairs(whitelistEvent.links or {}) do
-        local btn = CreateFrame("Button", nil, popup.linkContainer, "UIPanelButtonTemplate")
-        btn:SetSize(340, 20)
-        btn:SetPoint("TOPLEFT", popup.linkContainer, "TOPLEFT", 10, yOffset)
-        btn:SetText("|cff00ff00[Смотреть видео " .. i .. "]|r")
-        btn:SetScript("OnClick", function()
-            Ahoydar:ConfirmLink(link)
-        end)
-        yOffset = yOffset - 25
-        table.insert(popup.linkList, link)
-    end
-    popup.linkContainer:SetHeight(math.max(60, math.abs(yOffset)))
+    local yOffset = 0
+    for i, linkEntry in ipairs(whitelistEvent.links or {}) do
+        local linkName = "Ссылка " .. i
+        local linkURL  = ""
 
-    popup:Show()
-end
-
--- Функция, создающая окно подтверждения для ссылки (с возможностью копирования)
-function Ahoydar:ConfirmLink(link)
-    if not self.linkConfirmPopup then
-        local frame = CreateFrame("Frame", "AhoydarLinkConfirmPopup", UIParent, "BackdropTemplate")
-        frame:SetSize(400, 150)
-        if Ahoydar.todayPopup and Ahoydar.todayPopup:IsShown() then
-            frame:SetPoint("TOP", Ahoydar.todayPopup, "BOTTOM", 0, -10)
+        if type(linkEntry) == "table" then
+            linkName = linkEntry.name or linkName
+            linkURL  = linkEntry.url or ""
         else
-            frame:SetPoint("CENTER")
+            linkURL  = tostring(linkEntry)
         end
-        frame:SetBackdrop({
-            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile = true, tileSize = 32, edgeSize = 16,
-            insets = { left = 8, right = 8, top = 8, bottom = 8 },
-        })
-        frame:SetBackdropColor(0, 0, 0, 1)
-        frame:EnableMouse(true)
-        frame:SetMovable(true)
-        frame:RegisterForDrag("LeftButton")
-        frame:SetScript("OnDragStart", frame.StartMoving)
-        frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-        
-        local infoText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        infoText:SetPoint("TOP", frame, "TOP", 0, -20)
-        infoText:SetText("Перейти по ссылке?")
-        frame.infoText = infoText
-        
-        local editBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
-        editBox:SetSize(360, 25)
-        editBox:SetPoint("TOP", infoText, "BOTTOM", 0, -10)
-        editBox:SetAutoFocus(false)
-        frame.linkEditBox = editBox
-        
-        local okButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-        okButton:SetSize(80, 25)
-        okButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 20, 10)
-        okButton:SetText("ОК")
-        okButton:SetScript("OnClick", function() frame:Hide() end)
-        frame.okButton = okButton
-        
-        local copyButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-        copyButton:SetSize(80, 25)
-        copyButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 10)
-        copyButton:SetText("Скопировать")
-        copyButton:SetScript("OnClick", function()
-            print("Скопируйте ссылку: " .. frame.linkEditBox:GetText())
-            frame:Hide()
-        end)
-        frame.copyButton = copyButton
-        
-        self.linkConfirmPopup = frame
+
+        -- Создаём текст ярлыка, выравниваем по центру
+        local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetWidth(360)                   -- чтобы текст мог быть центрирован
+        label:SetJustifyH("CENTER")
+        label:SetPoint("TOP", container, "TOP", 0, -yOffset)
+        label:SetText(linkName)
+        yOffset = yOffset + 15
+
+        -- Создаём поле ввода, выравниваем по центру
+        local input = CreateFrame("EditBox", nil, container, "InputBoxTemplate")
+        input:SetSize(300, 25)                -- чуть уже контейнера, чтобы было видно края
+        input:SetPoint("TOP", container, "TOP", 0, -yOffset)
+        input:SetAutoFocus(false)
+        -- Выравниваем текст в поле ввода по центру
+        input:SetJustifyH("CENTER")
+        input:SetText(linkURL)
+        input:SetCursorPosition(0)
+
+        yOffset = yOffset + 35
     end
-    self.linkConfirmPopup.linkEditBox:SetText(link)
-    self.linkConfirmPopup:Show()
+    container:SetHeight(yOffset)
 end
 
+-- Фрейм для автоматической проверки при входе в игру (задержка 21 сек)
 local popupFrame = CreateFrame("Frame")
 popupFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 popupFrame:SetScript("OnEvent", function(self, event, ...)

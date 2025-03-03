@@ -332,29 +332,30 @@ function Ahoydar:OpenViewEventWindow(day)
     if self.editFrame and self.editFrame:IsShown() then
         self.editFrame:Hide()
     end
-    if not self.viewFrame then
-        self.viewFrame = CreateFrame("Frame", "AhoydarViewEventFrame", UIParent, "BackdropTemplate")
-        self.viewFrame:SetSize(400, 700)
-        self.viewFrame:SetPoint("TOPLEFT", Ahoydar.uiFrame, "TOPRIGHT", 10, 0)
-        self.viewFrame:SetMovable(true)
-        self.viewFrame:EnableMouse(true)
-        self.viewFrame:RegisterForDrag("LeftButton")
-        self.viewFrame:SetScript("OnDragStart", self.viewFrame.StartMoving)
-        self.viewFrame:SetScript("OnDragStop", self.viewFrame.StopMovingOrSizing)
-        self.viewFrame:SetBackdrop({
-            bgFile   = "Interface\\ChatFrame\\ChatFrameBackground",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            tile     = true, tileSize = 16, edgeSize = 16,
-            insets   = { left = 4, right = 4, top = 4, bottom = 4 },
-        })
-        self.viewFrame:SetBackdropColor(0, 0, 0, 0.9)
-        self.viewFrame:SetBackdropBorderColor(0.8, 0.8, 0.8, 1)
+if not self.viewFrame then
+    self.viewFrame = CreateFrame("Frame", "AhoydarViewEventFrame", UIParent, "BackdropTemplate")
+    self.viewFrame:SetSize(400, 700)
+    self.viewFrame:SetPoint("TOPLEFT", Ahoydar.uiFrame, "TOPRIGHT", 10, 0)
+    self.viewFrame:SetMovable(true)
+    self.viewFrame:EnableMouse(true)
+    self.viewFrame:RegisterForDrag("LeftButton")
+    self.viewFrame:SetScript("OnDragStart", self.viewFrame.StartMoving)
+    self.viewFrame:SetScript("OnDragStop", self.viewFrame.StopMovingOrSizing)
+    
+    self.viewFrame:SetBackdrop({
+        bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile     = true, tileSize = 32, edgeSize = 32,
+        insets   = { left = 8, right = 8, top = 8, bottom = 8 },
+    })
+    self.viewFrame:SetBackdropColor(0, 0, 0, 1)
+        --self.viewFrame:SetBackdropBorderColor(0, 0, 0, 1)
         
         local headerBg = self.viewFrame:CreateTexture(nil, "BACKGROUND")
         headerBg:SetPoint("TOPLEFT", 4, -4)
         headerBg:SetPoint("TOPRIGHT", -4, -4)
         headerBg:SetHeight(30)
-        headerBg:SetColorTexture(0.1, 0.5, 0.8, 0.7)
+        --headerBg:SetColorTexture(0.1, 0.5, 0.8, 0.7)
         
         local header = self.viewFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
         header:SetPoint("CENTER", headerBg, "CENTER", 0, 0)
@@ -462,30 +463,34 @@ function Ahoydar:OpenEditEventWindow(day, index)
         self.editFrame:Hide()
         return
     end
-    if not self.editFrame then
-        self.editFrame = CreateFrame("Frame", "AhoydarEditFrame", UIParent, "BackdropTemplate")
-        self.editFrame:SetSize(400, 700)
-        self.editFrame:SetPoint("TOPLEFT", Ahoydar.uiFrame, "TOPRIGHT", 10, 0)
-        self.editFrame:SetMovable(true)
-        self.editFrame:EnableMouse(true)
-        self.editFrame:RegisterForDrag("LeftButton")
-        self.editFrame:SetScript("OnDragStart", self.editFrame.StartMoving)
-        self.editFrame:SetScript("OnDragStop", self.editFrame.StopMovingOrSizing)
-        self.editFrame:SetBackdrop({
-            bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-            tile     = true, tileSize = 32, edgeSize = 32,
-            insets   = { left = 8, right = 8, top = 8, bottom = 8 },
-        })
-        self.editFrame:SetScript("OnHide", function()
-            if Ahoydar.datePickerFrame and Ahoydar.datePickerFrame:IsShown() then
-                Ahoydar.datePickerFrame:Hide()
-            end
-        end)
+if not self.editFrame then
+    self.editFrame = CreateFrame("Frame", "AhoydarEditFrame", UIParent, "BackdropTemplate")
+    self.editFrame:SetSize(400, 700)
+    self.editFrame:SetPoint("TOPLEFT", Ahoydar.uiFrame, "TOPRIGHT", 10, 0)
+    self.editFrame:SetMovable(true)
+    self.editFrame:EnableMouse(true)
+    self.editFrame:RegisterForDrag("LeftButton")
+    self.editFrame:SetScript("OnDragStart", self.editFrame.StartMoving)
+    self.editFrame:SetScript("OnDragStop", self.editFrame.StopMovingOrSizing)
+    
+    -- Используем тот же SetBackdrop, что и у основного окна:
+    self.editFrame:SetBackdrop({
+        bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile     = true, tileSize = 32, edgeSize = 32,
+        insets   = { left = 8, right = 8, top = 8, bottom = 8 },
+    })
+    self.editFrame:SetBackdropColor(0, 0, 0, 1)
+    
+    self.editFrame:SetScript("OnHide", function()
+        if Ahoydar.datePickerFrame and Ahoydar.datePickerFrame:IsShown() then
+            Ahoydar.datePickerFrame:Hide()
+        end
+    end)
         
         local header = self.editFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
         header:SetPoint("TOP", self.editFrame, "TOP", 0, -10)
-        header:SetText("Создать событие")
+        header:SetText("Создать/Редактировать событие")
         
         local titleLabel = self.editFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         titleLabel:SetPoint("TOPLEFT", self.editFrame, "TOPLEFT", 20, -50)
@@ -495,6 +500,25 @@ function Ahoydar:OpenEditEventWindow(day, index)
         self.editFrame.titleBox:SetSize(360, 30)
         self.editFrame.titleBox:SetPoint("TOPLEFT", titleLabel, "BOTTOMLEFT", 0, -5)
         self.editFrame.titleBox:SetAutoFocus(true)
+        -- Обработчик для подстановки описания из WhitelistEvents по совпадению заголовка
+        self.editFrame.titleBox:SetScript("OnTextChanged", function(editBox, userInput)
+            if not userInput then return end
+            local newTitle = editBox:GetText()
+            local foundDescription = nil
+            if WhitelistEvents and type(WhitelistEvents) == "table" then
+                for _, wEvent in ipairs(WhitelistEvents) do
+                    if wEvent.title == newTitle then
+                        foundDescription = wEvent.description
+                        break
+                    end
+                end
+            end
+            if foundDescription then
+                self.editFrame.descEditBox:SetText(foundDescription)
+            else
+                self.editFrame.descEditBox:SetText("")
+            end
+        end)
         
         local startDateLabel = self.editFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         startDateLabel:SetPoint("TOPLEFT", self.editFrame.titleBox, "BOTTOMLEFT", 0, -40)
@@ -554,6 +578,14 @@ function Ahoydar:OpenEditEventWindow(day, index)
         end)
         self.editFrame.descScroll:SetScrollChild(self.editFrame.descEditBox)
         
+        -- Добавляем чекбокс "Сделано данным персонажем"
+        self.editFrame.doneCheckbox = CreateFrame("CheckButton", nil, self.editFrame, "UICheckButtonTemplate")
+        self.editFrame.doneCheckbox:SetSize(24, 24)
+        self.editFrame.doneCheckbox:SetPoint("TOPLEFT", self.editFrame.descScroll, "BOTTOMLEFT", 0, -10)
+        self.editFrame.doneCheckbox.text = self.editFrame.doneCheckbox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        self.editFrame.doneCheckbox.text:SetPoint("LEFT", self.editFrame.doneCheckbox, "RIGHT", 5, 0)
+        self.editFrame.doneCheckbox.text:SetText("Сделано данным персонажем")
+        
         self.editFrame.saveButton = CreateFrame("Button", nil, self.editFrame, "UIPanelButtonTemplate")
         self.editFrame.saveButton:SetSize(100, 25)
         self.editFrame.saveButton:SetPoint("BOTTOMLEFT", self.editFrame, "BOTTOMLEFT", 20, 20)
@@ -563,6 +595,7 @@ function Ahoydar:OpenEditEventWindow(day, index)
             local startDate = self.editFrame.startDateBox:GetText()
             local endDate   = self.editFrame.endDateBox:GetText()
             local descText  = self.editFrame.descEditBox:GetText()
+            local done = self.editFrame.doneCheckbox:GetChecked()
             
             if titleText == "" then
                 print("Заголовок не может быть пустым.")
@@ -585,11 +618,19 @@ function Ahoydar:OpenEditEventWindow(day, index)
             
             if self.editFrame.currentIndex then
                 Ahoydar:EditEvent(day, self.editFrame.currentIndex, titleText, startDate, descText, endDate)
+                local events = Ahoydar:GetEvents(day)
+                if events and events[self.editFrame.currentIndex] then
+                    events[self.editFrame.currentIndex].completed = done
+                end
             else
                 local daySec = 86400
                 for t = startTS, endTS, daySec do
                     local dt = date("*t", t)
                     Ahoydar:AddEvent(dt.day, titleText, "Нет иконки", "Нет повторения", startDate, descText, endDate, dt.year, dt.month)
+                    local key = string.format("%04d-%02d-%02d", dt.year, dt.month, dt.day)
+                    if AhoydarDB.events[key] and #AhoydarDB.events[key] > 0 then
+                        AhoydarDB.events[key][#AhoydarDB.events[key]].completed = done
+                    end
                 end
             end
             self:UpdateCalendar()
@@ -627,13 +668,7 @@ function Ahoydar:OpenEditEventWindow(day, index)
     self.editFrame.startDateBox:SetText(defaultDate)
     self.editFrame.endDateBox:SetText(defaultDate)
     self.editFrame.titleBox:SetText("")
-    -- Если создается новое событие (index не указан), пытаемся взять полное описание из белого списка
-    local whitelistEvent = Ahoydar:GetTodayWhitelistEvent()
-    if not index and whitelistEvent then
-        self.editFrame.descEditBox:SetText(whitelistEvent.description or "")
-    else
-        self.editFrame.descEditBox:SetText("")
-    end
+    self.editFrame.descEditBox:SetText("")
     self.editFrame.selectedIcon = "Interface\\ICONS\\INV_Misc_QuestionMark"
     self.editFrame.deleteButton:Hide()
     
@@ -648,12 +683,31 @@ function Ahoydar:OpenEditEventWindow(day, index)
             if ev.endDate then
                 self.editFrame.endDateBox:SetText(ev.endDate)
             end
-            if ev.description then
+            -- Если заголовок совпадает с записью в белом списке, описание берем из WhitelistEvents.lua
+            local whitelistDesc = nil
+            if WhitelistEvents and type(WhitelistEvents) == "table" then
+                for _, wEvent in ipairs(WhitelistEvents) do
+                    if wEvent.title == ev.title then
+                        whitelistDesc = wEvent.description
+                        break
+                    end
+                end
+            end
+            if whitelistDesc then
+                self.editFrame.descEditBox:SetText(whitelistDesc)
+            else
                 self.editFrame.descEditBox:SetText(ev.description)
             end
             self.editFrame.selectedIcon = ev.icon or "Interface\\ICONS\\INV_Misc_QuestionMark"
+            if ev.completed then
+                self.editFrame.doneCheckbox:SetChecked(true)
+            else
+                self.editFrame.doneCheckbox:SetChecked(false)
+            end
             self.editFrame.deleteButton:Show()
         end
+    else
+        self.editFrame.doneCheckbox:SetChecked(false)
     end
     
     self.editFrame:Show()
@@ -793,20 +847,20 @@ function Ahoydar:LoadPreImportEvents(filterType)
                         category = "PvP"
                     elseif lowerTitle:find("подземелья") or lowerTitle:find("рейд") then
                         category = "PvE"
-                    elseif lowerTitle:find("годовщина") or 
-                           lowerTitle:find("лунный фестиваль") or 
-                           lowerTitle:find("детская неделя") or 
-                           lowerTitle:find("любовная лихорадка") or 
-                           lowerTitle:find("хмельной фестиваль") or 
-                           lowerTitle:find("тыквовин") or 
-                           lowerTitle:find("сад чудес") or 
-                           lowerTitle:find("огненный солнцеворот") or 
-                           lowerTitle:find("день пирата") or 
-                           lowerTitle:find("зимний покров") or 
-                           lowerTitle:find("пиршество странника") or 
-                           lowerTitle:find("день мертвых") or 
-                           lowerTitle:find("праздник фейерверков") or 
-                           lowerTitle:find("неделя урожая") then
+                    elseif lowerTitle:find("годовщина")
+                        or lowerTitle:find("лунный фестиваль")
+                        or lowerTitle:find("детская неделя")
+                        or lowerTitle:find("любовная лихорадка")
+                        or lowerTitle:find("хмельной фестиваль")
+                        or lowerTitle:find("тыквовин")
+                        or lowerTitle:find("сад чудес")
+                        or lowerTitle:find("огненный солнцеворот")
+                        or lowerTitle:find("день пирата")
+                        or lowerTitle:find("зимний покров")
+                        or lowerTitle:find("пиршество странника")
+                        or lowerTitle:find("день мертвых")
+                        or lowerTitle:find("праздник фейерверков")
+                        or lowerTitle:find("неделя урожая") then
                         category = "Праздники"
                     end
 

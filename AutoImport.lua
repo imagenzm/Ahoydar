@@ -21,9 +21,6 @@ function Ahoydar:AutoImportCalendarEvents()
     local month = monthInfo.month
     local numDays = monthInfo.numDays
 
-    -- Список ключевых слов для игнорирования событий
-    local ignoreKeywords = {"pvp", "арен", "полях боя", "наденьте", "кубок", "питомцев"}
-
     for day = 1, numDays do
         local numEvents = C_Calendar.GetNumDayEvents(0, day)
         if numEvents and numEvents > 0 then
@@ -34,15 +31,17 @@ function Ahoydar:AutoImportCalendarEvents()
             for i = 1, numEvents do
                 local event = C_Calendar.GetDayEvent(0, day, i)
                 if event then
-                    local lowerTitle = string.lower(event.title or "")
-                    local ignore = false
-                    for _, keyword in ipairs(ignoreKeywords) do
-                        if lowerTitle:find(keyword) then
-                            ignore = true
-                            break
+                    -- Фильтруем событие по белому списку
+                    local allowed = false
+                    if WhitelistEvents and type(WhitelistEvents) == "table" then
+                        for _, wEvent in ipairs(WhitelistEvents) do
+                            if event.title and event.title == wEvent.title then
+                                allowed = true
+                                break
+                            end
                         end
                     end
-                    if not ignore then
+                    if allowed then
                         local exists = false
                         for _, ev in ipairs(AhoydarDB.events[key]) do
                             if ev.title == event.title then
@@ -69,6 +68,7 @@ function Ahoydar:AutoImportCalendarEvents()
     print("Импорт событий текущего месяца завершён!")
     Ahoydar:UpdateCalendar()
 end
+
 
 -- Фрейм для автоматического запуска импорта через 10 секунд после входа в игру
 local autoImportFrame = CreateFrame("Frame")

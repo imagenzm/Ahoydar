@@ -11,10 +11,10 @@ Libs/LibDataBroker-1.1/LibDataBroker-1.1.lua
 Libs/LibDBIcon-1.0/LibDBIcon-1.0.lua
 
 Core.lua
+WhitelistEvents.lua
 GUI.lua
 Events.lua
 Minimap.lua
 DefaultEvents.lua
 AutoImport.lua
-WhitelistEvents.lua
 TodayPopup.lua
