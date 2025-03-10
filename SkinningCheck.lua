@@ -26,7 +26,7 @@ function SkinningCheck:CheckQuests()
     return string.format("Кожа Кобры: %s%s%s\nНа Клыка: %s%s%s", quest1Color, tostring(skinQuest1), reset, quest2Color, tostring(skinQuest2), reset)
 end
 
--- Новая функция, возвращающая true, если оба квеста выполнены
+-- Функция, возвращающая true, если оба квеста выполнены
 function SkinningCheck:AreAllQuestsCompleted()
     local skinQuest1 = C_QuestLog.IsQuestFlaggedCompleted(74235)
     local skinQuest2 = C_QuestLog.IsQuestFlaggedCompleted(84259)
@@ -53,7 +53,7 @@ function Ahoydar:MarkEventCompleted(eventTitle)
     end
 end
 
--- Функция для создания всплывающего окна с данными о выполнении
+-- Функция для создания всплывающего окна с данными о выполнении и чекбоксом "Сегодня не показывать"
 function SkinningCheck:ShowSkinningPopup()
     if not Ahoydar.skinningPopup then
         local frame = CreateFrame("Frame", "AhoydarSkinningPopup", UIParent, "BackdropTemplate")
@@ -103,20 +103,42 @@ function SkinningCheck:ShowSkinningPopup()
         closeBtn:SetScript("OnClick", function() frame:Hide() end)
         frame.closeBtn = closeBtn
 
-        Ahoydar.skinningPopup = frame
-    end
+        -- Чекбокс "Сегодня не показывать" размещаем ниже заголовка
+        local dontShowCheckbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+        dontShowCheckbox:SetSize(20, 20)
+        dontShowCheckbox:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 10)
+        dontShowCheckbox.text = dontShowCheckbox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        dontShowCheckbox.text:SetPoint("LEFT", dontShowCheckbox, "RIGHT", 5, 0)
+        dontShowCheckbox.text:SetText("Сегодня не показывать")
+        dontShowCheckbox:SetScript("OnClick", function(self)
+            local charName = UnitName("player") or "Unknown"
+            local today = date("*t")
+            local todayKey = string.format("%04d-%02d-%02d", today.year, today.month, today.day)
+            if not AhoydarDB.skinningHidden then
+                AhoydarDB.skinningHidden = {}
+            end
+            if self:GetChecked() then
+                AhoydarDB.skinningHidden[charName .. ":" .. todayKey] = true
+            else
+                AhoydarDB.skinningHidden[charName .. ":" .. todayKey] = nil
+            end
+        end)
 
-    if self:AreAllQuestsCompleted() then
-        -- Если все квесты выполнены, окно не показываем
-        return
+        Ahoydar.skinningPopup = frame
     end
 
     Ahoydar.skinningPopup.results:SetText(self:CheckQuests())
     Ahoydar.skinningPopup:Show()
 end
 
--- Основная функция, вызываемая при входе в игру
+-- Функция, вызываемая при входе в игру; проверяет флаг "Сегодня не показывать"
 function SkinningCheck:OnPlayerEnteringWorld()
+    local charName = UnitName("player") or "Unknown"
+    local today = date("*t")
+    local todayKey = string.format("%04d-%02d-%02d", today.year, today.month, today.day)
+    if AhoydarDB and AhoydarDB.skinningHidden and AhoydarDB.skinningHidden[charName .. ":" .. todayKey] then
+        return  -- Не показываем окно, если флаг установлен
+    end
     if self:IsSkinningLearned() and not self:AreAllQuestsCompleted() then
         self:ShowSkinningPopup()
     end
