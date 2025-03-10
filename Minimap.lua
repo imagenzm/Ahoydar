@@ -1,4 +1,3 @@
--- Minimap.lua
 if not Ahoydar then Ahoydar = {} end
 
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1", true)
@@ -21,7 +20,6 @@ local broker = LDB:NewDataObject("Ahoydar", {
                 print("Ahoydar: ToggleUI не определена!")
             end
         elseif button == "RightButton" then
-            -- Проверяем и инициализируем AhoydarDB, если его нет
             if not AhoydarDB then
                 AhoydarDB = { settings = { showMinimap = true } }
             elseif not AhoydarDB.settings then
@@ -34,9 +32,7 @@ local broker = LDB:NewDataObject("Ahoydar", {
 })
 
 function Ahoydar:SetupMinimapButton()
-    -- Проверяем, зарегистрирован ли объект 'Ahoydar' перед регистрацией
     if not LDBIcon:IsRegistered("Ahoydar") then
-        -- Проверяем и инициализируем AhoydarDB, если его нет
         if not AhoydarDB then
             AhoydarDB = { settings = { showMinimap = true } }
         elseif not AhoydarDB.settings then

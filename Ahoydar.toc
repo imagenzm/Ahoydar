@@ -1,4 +1,4 @@
-## Interface: 100107
+## Interface: 110007
 ## Title: Ahoydar
 ## Notes: Полноценный календарь в WoW
 ## Author: imagen
@@ -18,3 +18,4 @@ Minimap.lua
 DefaultEvents.lua
 AutoImport.lua
 TodayPopup.lua
+SkinningCheck.lua

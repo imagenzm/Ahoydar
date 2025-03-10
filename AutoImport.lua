@@ -1,7 +1,6 @@
 -- AutoImport.lua
 if not Ahoydar then Ahoydar = {} end
 
--- Функция автоматического импорта событий текущего месяца с фильтрацией
 function Ahoydar:AutoImportCalendarEvents()
     if not C_Calendar then
         print("API календаря недоступно!")
@@ -24,40 +23,79 @@ function Ahoydar:AutoImportCalendarEvents()
     for day = 1, numDays do
         local numEvents = C_Calendar.GetNumDayEvents(0, day)
         if numEvents and numEvents > 0 then
-            local key = string.format("%04d-%02d-%02d", year, month, day)
-            if not AhoydarDB.events[key] then
-                AhoydarDB.events[key] = {}
-            end
             for i = 1, numEvents do
                 local event = C_Calendar.GetDayEvent(0, day, i)
                 if event then
-                    -- Фильтруем событие по белому списку
+                    -- Проверяем, есть ли событие в белом списке (WhitelistEvents)
                     local allowed = false
                     if WhitelistEvents and type(WhitelistEvents) == "table" then
                         for _, wEvent in ipairs(WhitelistEvents) do
-                            if event.title and event.title == wEvent.title then
+                            -- Используем поиск подстроки вместо строгого сравнения
+                            if event.title and string.find(event.title, wEvent.title) then
                                 allowed = true
                                 break
                             end
                         end
                     end
+
                     if allowed then
-                        local exists = false
-                        for _, ev in ipairs(AhoydarDB.events[key]) do
-                            if ev.title == event.title then
-                                exists = true
-                                break
+                        -- Получаем таймстемпы начала и конца события
+                        local startTS, endTS
+                        if event.startTime and event.endTime then
+                            -- Если поле day отсутствует, используем значение monthDay
+                            if not event.startTime.day and event.startTime.monthDay then
+                                event.startTime.day = event.startTime.monthDay
                             end
+                            if not event.endTime.day and event.endTime.monthDay then
+                                event.endTime.day = event.endTime.monthDay
+                            end
+                            startTS = time(event.startTime)
+                            endTS   = time(event.endTime)
+                        else
+                            startTS = time{year=year, month=month, day=day, hour=0, min=0}
+                            endTS   = time{year=year, month=month, day=day, hour=23, min=59}
                         end
-                        if not exists then
-                            table.insert(AhoydarDB.events[key], {
-                                title = event.title or "Без названия",
-                                icon = event.icon or "Interface\\ICONS\\INV_Misc_QuestionMark",
-                                repeatOption = "Нет повторения",
-                                startDate = string.format("%02d.%02d.%04d 00:00", day, month, year),
-                                description = event.description or "",
-                                endDate = string.format("%02d.%02d.%04d 23:59", day, month, year),
-                            })
+
+                        if endTS < startTS then
+                            endTS = startTS
+                        end
+
+                        local multiDayID = nil
+                        local daySec = 86400
+                        if endTS > startTS then
+                            multiDayID = "multi_" .. tostring(GetTime()) .. "_" .. math.random(1000,9999)
+                        end
+
+                        -- Импортируем событие на каждый день диапазона
+                        for t = startTS, endTS, daySec do
+                            local dt = date("*t", t)
+                            -- Импортируем событие только в пределах текущего месяца (при необходимости можно убрать проверку)
+                            if dt.year == year and dt.month == month then
+                                local key = string.format("%04d-%02d-%02d", dt.year, dt.month, dt.day)
+                                if not AhoydarDB.events[key] then
+                                    AhoydarDB.events[key] = {}
+                                end
+
+                                local exists = false
+                                for _, ev in ipairs(AhoydarDB.events[key]) do
+                                    if ev.title == event.title then
+                                        exists = true
+                                        break
+                                    end
+                                end
+
+                                if not exists then
+                                    table.insert(AhoydarDB.events[key], {
+                                        id = multiDayID,
+                                        title = event.title or "Без названия",
+                                        icon = event.icon or "Interface\\ICONS\\INV_Misc_QuestionMark",
+                                        repeatOption = "Нет повторения",
+                                        startDate = date("%d.%m.%Y %H:%M", startTS),
+                                        description = event.description or "",
+                                        endDate = date("%d.%m.%Y %H:%M", endTS),
+                                    })
+                                end
+                            end
                         end
                     end
                 end
@@ -69,8 +107,6 @@ function Ahoydar:AutoImportCalendarEvents()
     Ahoydar:UpdateCalendar()
 end
 
-
--- Фрейм для автоматического запуска импорта через 10 секунд после входа в игру
 local autoImportFrame = CreateFrame("Frame")
 autoImportFrame:RegisterEvent("PLAYER_LOGIN")
 autoImportFrame:SetScript("OnEvent", function(self, event, ...)
